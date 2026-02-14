@@ -26,6 +26,10 @@ describe('integration: config', () => {
         '',
         '[routing]',
         'default_workspace = "/Users/wenfeng/Documents/code"',
+        'workspace_allowlist = ["/tmp"]',
+        '',
+        '[routing.chat_to_workspace]',
+        'oc_fixture_chat = "/tmp"',
         '',
         '[storage]',
         'db_path = ":memory:"',
@@ -42,5 +46,6 @@ describe('integration: config', () => {
     expect(cfg.feishu.connection_mode).toBe('websocket');
     expect(cfg.codex.max_concurrency).toBe(2);
     expect(cfg.storage.db_path).toBe(':memory:');
+    expect(cfg.routing.chat_to_workspace.oc_fixture_chat).toBe('/tmp');
   });
 });

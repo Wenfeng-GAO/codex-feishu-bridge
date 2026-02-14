@@ -517,8 +517,8 @@ Integration（离线）：
 | Task 3 入站事件解析 | DONE | 2026-02-14: 实现 text/post 解析、@mention strip + UT。 | test:unit + smoke:replay |
 | Task 4 策略引擎 | DONE | 2026-02-14: 实现 DM/群 allowlist + requireMention 策略 + UT。 | test:unit + test:integration |
 | Task 5 渲染与分片 | DONE | 2026-02-14: `feishu/render.ts` 实现 auto/raw/card + chunking，补 UT。 | test:unit + test:integration |
-| Task 6 Codex runner | DOING | 已实现 JSONL 解析与真实 runner（未加入离线 stub fixture 驱动的 IT）。 | test:unit + test:integration + smoke:replay |
-| Task 7 会话映射与队列 | TODO |  | test:unit + test:integration |
+| Task 6 Codex runner | DONE | 2026-02-14: 增加 codex stub fixture（jsonl + fake bin）+ runner IT。 | test:unit + test:integration + smoke:replay |
+| Task 7 会话映射与队列 | DONE | 2026-02-14: `ChatSerialQueue` + `InboundDispatcher`（同 chat 串行）。 | test:unit + test:integration |
 | Task 8 Feishu send/reply | TODO |  | test:integration + smoke:replay |
 | Task 9 WS 监听与分发 | TODO |  | test:unit + test:integration (+人工E2E) |
 | Task 10 App 主入口 | TODO |  | smoke:replay |

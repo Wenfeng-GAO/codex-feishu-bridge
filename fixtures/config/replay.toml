@@ -1,0 +1,26 @@
+[feishu]
+domain = "feishu"
+connection_mode = "websocket"
+
+[policy]
+dm_policy = "pairing"
+group_policy = "allowlist"
+require_mention = true
+allow_from_user_open_ids = []
+allow_from_group_chat_ids = ["oc_fixture_chat"]
+
+[routing]
+default_workspace = "/tmp"
+workspace_allowlist = ["/tmp"]
+
+[routing.chat_to_workspace]
+oc_fixture_chat = "/tmp"
+
+[storage]
+db_path = ":memory:"
+
+[codex]
+sandbox_default = "read-only"
+model = ""
+max_concurrency = 4
+

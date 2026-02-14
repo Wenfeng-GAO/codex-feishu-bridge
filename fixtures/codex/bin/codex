@@ -1,0 +1,27 @@
+#!/usr/bin/env node
+import fs from 'node:fs';
+import path from 'node:path';
+
+function readJsonl(name) {
+  const p = path.join(process.cwd(), 'fixtures', 'codex', 'jsonl', name);
+  return fs.readFileSync(p, 'utf-8').trimEnd() + '\n';
+}
+
+// Minimal stub for integration tests.
+// It ignores most flags and emits deterministic JSONL.
+const argv = process.argv.slice(2);
+
+const isExec = argv[0] === 'exec';
+const isResume = isExec && argv[1] === 'resume';
+
+if (!isExec) {
+  console.error('fake codex: expected "exec"');
+  process.exit(2);
+}
+
+if (isResume) {
+  process.stdout.write(readJsonl('resume.jsonl'));
+} else {
+  process.stdout.write(readJsonl('new_thread.jsonl'));
+}
+

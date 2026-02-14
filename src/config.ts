@@ -55,12 +55,24 @@ export type LoadConfigOpts = {
   env?: NodeJS.ProcessEnv;
 };
 
+function stripTomlMeta(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(stripTomlMeta);
+  if (!value || typeof value !== 'object') return value;
+
+  // @iarna/toml attaches Symbol(...) metadata keys to objects. Copying only string keys removes them.
+  const out: Record<string, unknown> = {};
+  for (const k of Object.keys(value as any)) {
+    out[k] = stripTomlMeta((value as any)[k]);
+  }
+  return out;
+}
+
 export function loadConfig(opts: LoadConfigOpts = {}): BridgeConfig {
   const env = opts.env ?? process.env;
   const configPath = opts.configPath ?? defaultConfigPath();
 
   const rawToml = fs.readFileSync(configPath, 'utf-8');
-  const parsed = TOML.parse(rawToml) as unknown;
+  const parsed = stripTomlMeta(TOML.parse(rawToml) as unknown);
   const cfg = BridgeConfigSchema.parse(parsed);
 
   // Allow env overrides for secrets (so config can omit them).
