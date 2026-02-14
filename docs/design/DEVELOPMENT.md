@@ -513,9 +513,9 @@ Integration（离线）：
 |------|------|------|------------|
 | Task 0 仓库骨架与工具链 | DONE | 2026-02-14: `codex-feishu-bridge` 初始化完成（TS+eslint+vitest+smoke）。 | lint/typecheck/test:unit/test:integration/smoke:replay |
 | Task 1 配置加载与校验 | DONE | 2026-02-14: `src/config.ts` + UT/IT 覆盖，支持 env 覆盖 `FEISHU_APP_ID/SECRET`。 | test:unit + test:integration |
-| Task 2 sqlite 存储层 | TODO |  | test:unit + test:integration |
-| Task 3 入站事件解析 | TODO |  | test:unit + smoke:replay |
-| Task 4 策略引擎 | TODO |  | test:unit + test:integration |
+| Task 2 sqlite 存储层 | DONE | 2026-02-14: 使用 `node:sqlite` 实现 `processed_messages/chat_sessions` + UT/IT。 | test:unit + test:integration |
+| Task 3 入站事件解析 | DONE | 2026-02-14: 实现 text/post 解析、@mention strip + UT。 | test:unit + smoke:replay |
+| Task 4 策略引擎 | DONE | 2026-02-14: 实现 DM/群 allowlist + requireMention 策略 + UT。 | test:unit + test:integration |
 | Task 5 渲染与分片 | TODO |  | test:unit + test:integration |
 | Task 6 Codex runner | TODO |  | test:unit + test:integration + smoke:replay |
 | Task 7 会话映射与队列 | TODO |  | test:unit + test:integration |
