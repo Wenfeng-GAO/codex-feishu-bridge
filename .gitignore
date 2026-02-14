@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.DS_Store
+
+# Local runtime secrets/config
+/.env
+/var/
+*.log
+

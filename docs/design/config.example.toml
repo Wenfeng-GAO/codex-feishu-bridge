@@ -1,0 +1,33 @@
+# Example config for codex-feishu-bridge
+# Save as: ~/.codex/feishu-bridge/config.toml
+
+[feishu]
+# app_id = "cli_xxx"
+# app_secret = "xxxxx"
+domain = "feishu"         # "feishu" | "lark" | "https://your.private.domain"
+connection_mode = "websocket"
+
+[policy]
+dm_policy = "pairing"     # "pairing" | "allowlist" | "open"
+group_policy = "allowlist" # "allowlist" | "open" | "disabled"
+require_mention = true
+
+# Allowlisted users (open_id) for DM (if dm_policy=allowlist) and for admin commands.
+allow_from_user_open_ids = [
+  # "ou_xxx",
+]
+
+# Allowlisted group chat_ids (if group_policy=allowlist)
+allow_from_group_chat_ids = [
+  # "oc_xxx",
+]
+
+[routing]
+default_workspace = "/Users/wenfeng/Documents/code"
+chat_to_workspace = { }
+
+[codex]
+sandbox_default = "read-only"   # "read-only" | "workspace-write"
+model = ""                      # optional
+max_concurrency = 4
+
