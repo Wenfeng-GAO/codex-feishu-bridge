@@ -519,7 +519,7 @@ Integration（离线）：
 | Task 5 渲染与分片 | DONE | 2026-02-14: `feishu/render.ts` 实现 auto/raw/card + chunking，补 UT。 | test:unit + test:integration |
 | Task 6 Codex runner | DONE | 2026-02-14: 增加 codex stub fixture（jsonl + fake bin）+ runner IT。 | test:unit + test:integration + smoke:replay |
 | Task 7 会话映射与队列 | DONE | 2026-02-14: `ChatSerialQueue` + `InboundDispatcher`（同 chat 串行）。 | test:unit + test:integration |
-| Task 8 Feishu send/reply | TODO |  | test:integration + smoke:replay |
-| Task 9 WS 监听与分发 | TODO |  | test:unit + test:integration (+人工E2E) |
-| Task 10 App 主入口 | TODO |  | smoke:replay |
-| Task 11 Doctor 自检 | TODO |  | test:unit + test:integration |
+| Task 8 Feishu send/reply | DONE | 2026-02-14: `feishu/send.ts` + adapter + UT/IT（commit `b599b7f`）。 | test:unit + test:integration + smoke:replay |
+| Task 9 WS 监听与分发 | DONE | 2026-02-14: `feishu/ws.ts` 接入 `WSClient+EventDispatcher`，补 backoff UT 与去重 IT（commit `b599b7f`）。 | test:unit + test:integration (+人工E2E) |
+| Task 10 App 主入口 | DONE | 2026-02-14: `src/cli.ts` + `--replay/--dry-run`，`smoke:replay` 走 `runReplay`（commit `b599b7f`）。 | smoke:replay |
+| Task 11 Doctor 自检 | DONE | 2026-02-14: `doctor` 命令 + 离线 IT（codex stub），并提供 `--watch`（人工）（commit `b599b7f`）。 | test:unit + test:integration |
