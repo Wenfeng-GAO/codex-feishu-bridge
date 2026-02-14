@@ -10,6 +10,7 @@ function main(): void {
     feishu: {},
     policy: {},
     routing: { default_workspace: '/tmp' },
+    storage: {},
     codex: {},
   });
   console.log('smoke:replay OK');

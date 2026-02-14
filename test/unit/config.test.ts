@@ -12,6 +12,7 @@ describe('BridgeConfigSchema', () => {
       feishu: {},
       policy: {},
       routing: { default_workspace: '/tmp' },
+      storage: {},
       codex: {},
     });
     expect(cfg.feishu.domain).toBe('feishu');
@@ -20,6 +21,7 @@ describe('BridgeConfigSchema', () => {
     expect(cfg.policy.group_policy).toBe('allowlist');
     expect(cfg.policy.require_mention).toBe(true);
     expect(cfg.codex.sandbox_default).toBe('read-only');
+    expect(cfg.storage.db_path).toMatch(/state\.sqlite3$/);
   });
 });
 
@@ -55,4 +57,3 @@ describe('loadConfig', () => {
     expect(cfg.feishu.app_secret).toBe('yyy');
   });
 });
-

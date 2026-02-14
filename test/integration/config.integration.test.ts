@@ -27,6 +27,9 @@ describe('integration: config', () => {
         '[routing]',
         'default_workspace = "/Users/wenfeng/Documents/code"',
         '',
+        '[storage]',
+        'db_path = ":memory:"',
+        '',
         '[codex]',
         'sandbox_default = "read-only"',
         'max_concurrency = 2',
@@ -38,6 +41,6 @@ describe('integration: config', () => {
     const cfg = loadConfig({ configPath: file, env: {} });
     expect(cfg.feishu.connection_mode).toBe('websocket');
     expect(cfg.codex.max_concurrency).toBe(2);
+    expect(cfg.storage.db_path).toBe(':memory:');
   });
 });
-

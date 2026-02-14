@@ -5,6 +5,8 @@ import path from 'node:path';
 import * as TOML from '@iarna/toml';
 import { z } from 'zod';
 
+import { defaultDbPath } from './paths.js';
+
 const DomainSchema = z.union([z.enum(['feishu', 'lark']), z.string().url().startsWith('https://')]);
 const ConnectionModeSchema = z.enum(['websocket']); // MVP: websocket only.
 
@@ -29,6 +31,11 @@ export const BridgeConfigSchema = z
       // Explicit allowlist of workspaces. If empty, allow only default_workspace + mapped ones.
       workspace_allowlist: z.array(z.string().min(1)).default([]),
     }),
+    storage: z
+      .object({
+        db_path: z.string().min(1).default(defaultDbPath()),
+      })
+      .default({ db_path: defaultDbPath() }),
     codex: z.object({
       sandbox_default: z.enum(['read-only', 'workspace-write']).default('read-only'),
       model: z.string().default(''),
@@ -64,4 +71,3 @@ export function loadConfig(opts: LoadConfigOpts = {}): BridgeConfig {
 
   return cfg;
 }
-
