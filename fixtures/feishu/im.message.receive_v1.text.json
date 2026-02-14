@@ -1,0 +1,22 @@
+{
+  "sender": {
+    "sender_id": {
+      "open_id": "ou_sender"
+    }
+  },
+  "message": {
+    "message_id": "m_fixture_1",
+    "chat_id": "oc_fixture_chat",
+    "chat_type": "group",
+    "message_type": "text",
+    "content": "{\"text\":\"@Bot please summarize the repo\"}",
+    "mentions": [
+      {
+        "key": "<at user_id=\"ou_bot\">Bot</at>",
+        "id": { "open_id": "ou_bot" },
+        "name": "Bot"
+      }
+    ]
+  }
+}
+
