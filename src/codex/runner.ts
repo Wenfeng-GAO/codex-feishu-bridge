@@ -26,13 +26,15 @@ export async function runCodex(params: RunCodexParams): Promise<RunCodexResult> 
 
   const args: string[] = [];
   if (params.threadId) {
-    args.push('exec', 'resume', params.threadId);
+    args.push('exec', 'resume', '--skip-git-repo-check', '--json');
+    if (params.model && params.model.trim()) args.push('--model', params.model.trim());
+    args.push(params.threadId, params.prompt);
   } else {
     args.push('exec');
+    args.push('--skip-git-repo-check', '--json', '--sandbox', params.sandbox, '-C', params.workspace);
+    if (params.model && params.model.trim()) args.push('--model', params.model.trim());
+    args.push(params.prompt);
   }
-  args.push('--skip-git-repo-check', '--json', '--sandbox', params.sandbox, '-C', params.workspace);
-  if (params.model && params.model.trim()) args.push('--model', params.model.trim());
-  args.push(params.prompt);
 
   const child = spawn(codexPath, args, {
     stdio: ['ignore', 'pipe', 'pipe'],

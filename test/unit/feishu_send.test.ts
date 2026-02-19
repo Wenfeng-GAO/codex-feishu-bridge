@@ -3,12 +3,14 @@ import { describe, expect, it } from 'vitest';
 import { sendReply } from '../../src/feishu/send.js';
 
 describe('feishu/sendReply', () => {
-  it('prefers reply, falls back to create when reply fails', async () => {
+  it('sends chunks as top-level messages via create', async () => {
     const calls: string[] = [];
     const api = {
+      react: async () => {
+        calls.push('react');
+      },
       reply: async () => {
         calls.push('reply');
-        throw new Error('nope');
       },
       create: async () => {
         calls.push('create');
@@ -23,8 +25,6 @@ describe('feishu/sendReply', () => {
       chunks: ['a', 'b'],
     });
 
-    // For each chunk, reply fails then create is called.
-    expect(calls).toEqual(['reply', 'create', 'reply', 'create']);
+    expect(calls).toEqual(['create', 'create']);
   });
 });
-

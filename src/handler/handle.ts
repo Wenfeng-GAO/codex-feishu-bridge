@@ -9,6 +9,7 @@ import type { Inbound } from '../feishu/types.js';
 import type { Store } from '../store/db.js';
 
 export type SendAdapter = {
+  ackReceived(params: { messageId: string; emojiType?: string }): Promise<void>;
   sendReply(params: {
     chatId: string;
     replyToMessageId?: string;
@@ -70,6 +71,13 @@ export async function handleInbound(params: {
       createdAt: Date.now(),
     });
     return;
+  }
+
+  // Non-blocking UX signal: react as soon as the task is accepted for execution.
+  try {
+    await params.send.ackReceived({ messageId: inbound.message_id, emojiType: 'OK' });
+  } catch {
+    // Ignore reaction errors to avoid impacting task execution.
   }
 
   const existing = store.getChatSession(inbound.chat_id);

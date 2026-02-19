@@ -20,8 +20,11 @@ if (!isExec) {
 }
 
 if (isResume) {
+  if (argv.includes('--sandbox') || argv.includes('-C') || argv.includes('--cd')) {
+    console.error('fake codex: resume does not accept --sandbox/-C');
+    process.exit(2);
+  }
   process.stdout.write(readJsonl('resume.jsonl'));
 } else {
   process.stdout.write(readJsonl('new_thread.jsonl'));
 }
-

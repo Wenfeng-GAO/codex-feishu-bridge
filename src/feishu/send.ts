@@ -2,6 +2,7 @@ import type { BridgeConfig } from '../config.js';
 import { createFeishuClient } from './client.js';
 
 export type FeishuApi = {
+  react(params: { messageId: string; emojiType: string }): Promise<void>;
   reply(params: { messageId: string; content: string; msgType: string }): Promise<void>;
   create(params: { chatId: string; content: string; msgType: string }): Promise<void>;
 };
@@ -42,21 +43,12 @@ export type SendReplyParams = {
 };
 
 export async function sendReply(params: SendReplyParams): Promise<void> {
-  const { api, chatId, replyToMessageId, chunks } = params;
+  const { api, chatId, chunks } = params;
 
   for (const chunk of chunks) {
     const payload =
       params.modeUsed === 'card' ? buildInteractiveMarkdownCard(chunk) : buildPostMarkdown(chunk);
-
-    if (replyToMessageId) {
-      try {
-        await api.reply({ messageId: replyToMessageId, content: payload.content, msgType: payload.msgType });
-        continue;
-      } catch {
-        // Fall back to create below.
-      }
-    }
-
+    // Use top-level create so replies are visible in the main chat timeline.
     await api.create({ chatId, content: payload.content, msgType: payload.msgType });
   }
 }
@@ -65,6 +57,13 @@ export function createFeishuApi(cfg: BridgeConfig): FeishuApi {
   const client = createFeishuClient(cfg);
 
   return {
+    react: async ({ messageId, emojiType }) => {
+      const res: any = await client.im.messageReaction.create({
+        path: { message_id: messageId },
+        data: { reaction_type: { emoji_type: emojiType } },
+      });
+      if (res?.code !== 0) throw new Error(res?.msg || `reaction failed code=${res?.code}`);
+    },
     reply: async ({ messageId, content, msgType }) => {
       const res: any = await client.im.message.reply({
         path: { message_id: messageId },

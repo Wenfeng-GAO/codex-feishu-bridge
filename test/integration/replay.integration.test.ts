@@ -41,6 +41,7 @@ describe('integration: replay', () => {
       inbound,
       runCodex: async () => ({ threadId: 't1', finalText: 'hello' }),
       send: {
+        ackReceived: async () => {},
         sendReply: async ({ chunks }) => {
           sent.push(...chunks);
         },

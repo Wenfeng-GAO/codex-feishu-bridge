@@ -32,7 +32,7 @@ describe('integration: queue', () => {
       await sleep(30);
       return { threadId: 't', finalText: 'ok' };
     };
-    const send = { sendReply: async () => {} };
+    const send = { ackReceived: async () => {}, sendReply: async () => {} };
 
     const d = new InboundDispatcher({
       cfg,
@@ -59,4 +59,3 @@ describe('integration: queue', () => {
     expect(trace).toEqual(['run:[Feishu DM] ou: A', 'run:[Feishu DM] ou: B']);
   });
 });
-

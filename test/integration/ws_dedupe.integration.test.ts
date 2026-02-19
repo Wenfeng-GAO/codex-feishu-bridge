@@ -37,6 +37,7 @@ describe('integration: ws handler dedupe via processed_messages', () => {
         return { threadId: threadId ?? 't', finalText: 'OK' };
       },
       send: {
+        ackReceived: async () => {},
         sendReply: async () => {
           sends += 1;
         },
@@ -63,4 +64,3 @@ describe('integration: ws handler dedupe via processed_messages', () => {
     expect(sends).toBe(1);
   });
 });
-

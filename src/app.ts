@@ -44,6 +44,9 @@ function createReplaySendAdapter(): { send: SendAdapter; sent: string[] } {
   return {
     sent,
     send: {
+      ackReceived: async () => {
+        // no-op for replay mode
+      },
       sendReply: async ({ chunks }) => {
         sent.push(...chunks);
       },
@@ -94,8 +97,23 @@ export async function runService(opts: AppCommonOpts): Promise<void> {
   const info = wsClient.getReconnectInfo?.();
   console.log('[ws] started', info ?? '');
 
-  // Keep process alive.
-  await new Promise<void>(() => {});
+  // Keep process alive and allow graceful shutdown on signals.
+  const keepAlive = setInterval(() => {
+    // no-op
+  }, 60_000);
+
+  await new Promise<void>((resolve) => {
+    const stop = () => resolve();
+    process.once('SIGINT', stop);
+    process.once('SIGTERM', stop);
+  });
+
+  clearInterval(keepAlive);
+  try {
+    wsClient.close({ force: true });
+  } catch {
+    // ignore close errors during shutdown
+  }
 }
 
 export function openStoreForDoctor(dbPath: string): Store {
