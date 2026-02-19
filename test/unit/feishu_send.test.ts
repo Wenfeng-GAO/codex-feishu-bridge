@@ -8,6 +8,10 @@ describe('feishu/sendReply', () => {
     const api = {
       react: async () => {
         calls.push('react');
+        return { reactionId: 'r1' };
+      },
+      unreact: async () => {
+        calls.push('unreact');
       },
       reply: async () => {
         calls.push('reply');

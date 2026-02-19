@@ -32,7 +32,11 @@ describe('integration: queue', () => {
       await sleep(30);
       return { threadId: 't', finalText: 'ok' };
     };
-    const send = { ackReceived: async () => {}, sendReply: async () => {} };
+    const send = {
+      ackReceived: async ({ messageId }: { messageId: string }) => ({ messageId, reactionId: 'r1' }),
+      clearAck: async () => {},
+      sendReply: async () => {},
+    };
 
     const d = new InboundDispatcher({
       cfg,

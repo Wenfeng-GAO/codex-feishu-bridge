@@ -46,6 +46,10 @@ function createReplaySendAdapter(): { send: SendAdapter; sent: string[] } {
     send: {
       ackReceived: async () => {
         // no-op for replay mode
+        return undefined;
+      },
+      clearAck: async () => {
+        // no-op for replay mode
       },
       sendReply: async ({ chunks }) => {
         sent.push(...chunks);

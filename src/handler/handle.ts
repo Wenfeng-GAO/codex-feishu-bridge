@@ -9,7 +9,8 @@ import type { Inbound } from '../feishu/types.js';
 import type { Store } from '../store/db.js';
 
 export type SendAdapter = {
-  ackReceived(params: { messageId: string; emojiType?: string }): Promise<void>;
+  ackReceived(params: { messageId: string; emojiType?: string }): Promise<{ messageId: string; reactionId?: string } | undefined>;
+  clearAck(params: { messageId: string; reactionId?: string }): Promise<void>;
   sendReply(params: {
     chatId: string;
     replyToMessageId?: string;
@@ -74,41 +75,54 @@ export async function handleInbound(params: {
   }
 
   // Non-blocking UX signal: react as soon as the task is accepted for execution.
+  // Keep promise for later cleanup, but never await here.
+  const ackPromise = params.send.ackReceived({ messageId: inbound.message_id, emojiType: 'Typing' }).catch(() => undefined);
+
+  let replySent = false;
   try {
-    await params.send.ackReceived({ messageId: inbound.message_id, emojiType: 'OK' });
-  } catch {
-    // Ignore reaction errors to avoid impacting task execution.
+    const existing = store.getChatSession(inbound.chat_id);
+    const sandbox: CodexSandbox = existing?.sandbox ?? cfg.codex.sandbox_default;
+    const threadId = existing?.thread_id ?? undefined;
+
+    const prompt = buildCodexPrompt(inbound);
+    const result = await params.runCodex({ threadId, workspace, sandbox, prompt });
+
+    store.upsertChatSession({
+      chatId: inbound.chat_id,
+      workspace,
+      threadId: result.threadId,
+      sandbox,
+      updatedAt: Date.now(),
+    });
+
+    const renderMode = params.renderMode ?? 'auto';
+    const limit = params.textChunkLimit ?? 4000;
+    const rendered = renderReply({ text: result.finalText, mode: renderMode, limit });
+
+    await params.send.sendReply({
+      chatId: inbound.chat_id,
+      replyToMessageId: inbound.message_id,
+      modeUsed: rendered.modeUsed,
+      chunks: rendered.chunks,
+    });
+    replySent = true;
+
+    store.markMessageProcessed({
+      messageId: inbound.message_id,
+      chatId: inbound.chat_id,
+      createdAt: Date.now(),
+    });
+  } finally {
+    if (replySent) {
+      // Remove typing indicator only after a real reply is delivered.
+      void ackPromise.then(async (ack) => {
+        if (!ack) return;
+        try {
+          await params.send.clearAck(ack);
+        } catch {
+          // ignore cleanup errors
+        }
+      });
+    }
   }
-
-  const existing = store.getChatSession(inbound.chat_id);
-  const sandbox: CodexSandbox = existing?.sandbox ?? cfg.codex.sandbox_default;
-  const threadId = existing?.thread_id ?? undefined;
-
-  const prompt = buildCodexPrompt(inbound);
-  const result = await params.runCodex({ threadId, workspace, sandbox, prompt });
-
-  store.upsertChatSession({
-    chatId: inbound.chat_id,
-    workspace,
-    threadId: result.threadId,
-    sandbox,
-    updatedAt: Date.now(),
-  });
-
-  const renderMode = params.renderMode ?? 'auto';
-  const limit = params.textChunkLimit ?? 4000;
-  const rendered = renderReply({ text: result.finalText, mode: renderMode, limit });
-
-  await params.send.sendReply({
-    chatId: inbound.chat_id,
-    replyToMessageId: inbound.message_id,
-    modeUsed: rendered.modeUsed,
-    chunks: rendered.chunks,
-  });
-
-  store.markMessageProcessed({
-    messageId: inbound.message_id,
-    chatId: inbound.chat_id,
-    createdAt: Date.now(),
-  });
 }
