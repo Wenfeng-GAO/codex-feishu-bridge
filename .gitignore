@@ -6,4 +6,4 @@ dist/
 /.env
 /var/
 *.log
-
+/tmp/
