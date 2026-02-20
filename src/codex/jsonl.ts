@@ -3,18 +3,22 @@ export type CodexJsonlResult = {
   finalText?: string;
 };
 
+export function parseCodexJsonlLine(line: string): any | undefined {
+  if (!line || !line.trim()) return undefined;
+  try {
+    return JSON.parse(line);
+  } catch {
+    return undefined;
+  }
+}
+
 export function parseCodexJsonl(lines: string[]): CodexJsonlResult {
   let threadId: string | undefined;
   let finalText: string | undefined;
 
   for (const line of lines) {
-    if (!line || !line.trim()) continue;
-    let obj: any;
-    try {
-      obj = JSON.parse(line);
-    } catch {
-      continue;
-    }
+    const obj = parseCodexJsonlLine(line);
+    if (!obj) continue;
 
     if (obj?.type === 'thread.started' && typeof obj.thread_id === 'string') {
       threadId = obj.thread_id;
@@ -31,4 +35,3 @@ export function parseCodexJsonl(lines: string[]): CodexJsonlResult {
 
   return { threadId, finalText };
 }
-

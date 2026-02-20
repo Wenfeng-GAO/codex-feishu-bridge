@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 
 import { loadConfig, type BridgeConfig } from './config.js';
+import { extractProgressText } from './codex/progress.js';
 import { runCodex } from './codex/runner.js';
 import { createFeishuSendAdapter } from './feishu/adapter.js';
 import { parseInboundMessage } from './feishu/parse.js';
@@ -21,9 +22,10 @@ function createRunCodexAdapter(opts: { cfg: BridgeConfig } & AppCommonOpts): Run
   const codexPath = opts.codexPath ?? process.env.CODEX_PATH ?? 'codex';
   const dryRun = Boolean(opts.dryRun);
 
-  return async ({ threadId, workspace, sandbox, prompt }) => {
+  return async ({ threadId, workspace, sandbox, prompt, onProgress }) => {
     if (dryRun) {
       const shown = `DRY-RUN (no codex executed)\n\n\`\`\`\n${prompt}\n\`\`\``;
+      onProgress?.('DRY-RUN: codex execution skipped');
       return { threadId: threadId ?? 'dry_run_thread', finalText: shown };
     }
 
@@ -34,6 +36,10 @@ function createRunCodexAdapter(opts: { cfg: BridgeConfig } & AppCommonOpts): Run
       sandbox,
       prompt,
       timeoutMs: 10 * 60 * 1_000,
+      onEvent: (event) => {
+        const text = extractProgressText(event);
+        if (text) onProgress?.(text);
+      },
     });
     return { threadId: r.threadId, finalText: r.finalText };
   };
@@ -49,6 +55,9 @@ function createReplaySendAdapter(): { send: SendAdapter; sent: string[] } {
         return undefined;
       },
       clearAck: async () => {
+        // no-op for replay mode
+      },
+      sendProgress: async () => {
         // no-op for replay mode
       },
       sendReply: async ({ chunks }) => {

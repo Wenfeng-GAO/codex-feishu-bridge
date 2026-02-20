@@ -43,6 +43,7 @@ describe('integration: replay', () => {
       send: {
         ackReceived: async () => ({ messageId: inbound.message_id, reactionId: 'r1' }),
         clearAck: async () => {},
+        sendProgress: async () => {},
         sendReply: async ({ chunks }) => {
           sent.push(...chunks);
         },

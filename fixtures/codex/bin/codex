@@ -10,6 +10,7 @@ function readJsonl(name) {
 // Minimal stub for integration tests.
 // It ignores most flags and emits deterministic JSONL.
 const argv = process.argv.slice(2);
+const isDanger = argv.includes('--dangerously-bypass-approvals-and-sandbox');
 
 const isExec = argv[0] === 'exec';
 const isResume = isExec && argv[1] === 'resume';
@@ -24,7 +25,7 @@ if (isResume) {
     console.error('fake codex: resume does not accept --sandbox/-C');
     process.exit(2);
   }
-  process.stdout.write(readJsonl('resume.jsonl'));
+  process.stdout.write(readJsonl(isDanger ? 'resume_danger.jsonl' : 'resume.jsonl'));
 } else {
-  process.stdout.write(readJsonl('new_thread.jsonl'));
+  process.stdout.write(readJsonl(isDanger ? 'new_thread_danger.jsonl' : 'new_thread.jsonl'));
 }

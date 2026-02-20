@@ -39,6 +39,7 @@ describe('integration: ws handler dedupe via processed_messages', () => {
       send: {
         ackReceived: async ({ messageId }) => ({ messageId, reactionId: 'r1' }),
         clearAck: async () => {},
+        sendProgress: async () => {},
         sendReply: async () => {
           sends += 1;
         },

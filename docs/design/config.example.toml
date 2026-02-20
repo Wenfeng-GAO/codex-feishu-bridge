@@ -27,7 +27,6 @@ default_workspace = "/Users/wenfeng/Documents/code"
 chat_to_workspace = { }
 
 [codex]
-sandbox_default = "read-only"   # "read-only" | "workspace-write"
+sandbox_default = "read-only"   # "read-only" | "workspace-write" | "danger-full-access"
 model = ""                      # optional
 max_concurrency = 4
-

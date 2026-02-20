@@ -43,6 +43,13 @@ export type SendReplyParams = {
   chunks: string[];
 };
 
+export type SendProgressParams = {
+  api: FeishuApi;
+  chatId: string;
+  replyToMessageId?: string;
+  text: string;
+};
+
 export async function sendReply(params: SendReplyParams): Promise<void> {
   const { api, chatId, chunks } = params;
 
@@ -52,6 +59,11 @@ export async function sendReply(params: SendReplyParams): Promise<void> {
     // Use top-level create so replies are visible in the main chat timeline.
     await api.create({ chatId, content: payload.content, msgType: payload.msgType });
   }
+}
+
+export async function sendProgress(params: SendProgressParams): Promise<void> {
+  const payload = buildPostMarkdown(`[progress] ${params.text}`);
+  await params.api.create({ chatId: params.chatId, content: payload.content, msgType: payload.msgType });
 }
 
 export function createFeishuApi(cfg: BridgeConfig): FeishuApi {

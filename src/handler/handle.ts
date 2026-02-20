@@ -11,6 +11,7 @@ import type { Store } from '../store/db.js';
 export type SendAdapter = {
   ackReceived(params: { messageId: string; emojiType?: string }): Promise<{ messageId: string; reactionId?: string } | undefined>;
   clearAck(params: { messageId: string; reactionId?: string }): Promise<void>;
+  sendProgress(params: { chatId: string; replyToMessageId?: string; text: string }): Promise<void>;
   sendReply(params: {
     chatId: string;
     replyToMessageId?: string;
@@ -24,6 +25,7 @@ export type RunCodexAdapter = (params: {
   workspace: string;
   sandbox: CodexSandbox;
   prompt: string;
+  onProgress?: (text: string) => void;
 }) => Promise<Pick<RunCodexResult, 'threadId' | 'finalText'>>;
 
 function resolveWorkspace(cfg: BridgeConfig, inbound: Inbound): string {
@@ -79,13 +81,40 @@ export async function handleInbound(params: {
   const ackPromise = params.send.ackReceived({ messageId: inbound.message_id, emojiType: 'Typing' }).catch(() => undefined);
 
   let replySent = false;
+  let progressClosed = false;
+  const maxProgressMessages = 6;
+  let progressSent = 0;
+  let lastProgress = '';
+  let progressTail: Promise<void> = Promise.resolve();
+  const emitProgress = (text: string): void => {
+    if (progressClosed) return;
+    const t = text.trim();
+    if (!t) return;
+    if (t === lastProgress) return;
+    if (progressSent >= maxProgressMessages) return;
+    lastProgress = t;
+    progressSent += 1;
+    progressTail = progressTail
+      .then(async () => {
+        await params.send.sendProgress({
+          chatId: inbound.chat_id,
+          replyToMessageId: inbound.message_id,
+          text: t,
+        });
+      })
+      .catch(() => {
+        // ignore progress message errors
+      });
+  };
+
   try {
     const existing = store.getChatSession(inbound.chat_id);
     const sandbox: CodexSandbox = existing?.sandbox ?? cfg.codex.sandbox_default;
     const threadId = existing?.thread_id ?? undefined;
 
     const prompt = buildCodexPrompt(inbound);
-    const result = await params.runCodex({ threadId, workspace, sandbox, prompt });
+    emitProgress('Task accepted, starting execution');
+    const result = await params.runCodex({ threadId, workspace, sandbox, prompt, onProgress: emitProgress });
 
     store.upsertChatSession({
       chatId: inbound.chat_id,
@@ -99,6 +128,8 @@ export async function handleInbound(params: {
     const limit = params.textChunkLimit ?? 4000;
     const rendered = renderReply({ text: result.finalText, mode: renderMode, limit });
 
+    progressClosed = true;
+    await Promise.race([progressTail, new Promise<void>((resolve) => setTimeout(resolve, 800))]);
     await params.send.sendReply({
       chatId: inbound.chat_id,
       replyToMessageId: inbound.message_id,
@@ -113,6 +144,7 @@ export async function handleInbound(params: {
       createdAt: Date.now(),
     });
   } finally {
+    progressClosed = true;
     if (replySent) {
       // Remove typing indicator only after a real reply is delivered.
       void ackPromise.then(async (ack) => {

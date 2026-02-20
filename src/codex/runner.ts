@@ -1,8 +1,8 @@
 import { spawn } from 'node:child_process';
 
-import { parseCodexJsonl } from './jsonl.js';
+import { parseCodexJsonl, parseCodexJsonlLine } from './jsonl.js';
 
-export type CodexSandbox = 'read-only' | 'workspace-write';
+export type CodexSandbox = 'read-only' | 'workspace-write' | 'danger-full-access';
 
 export type RunCodexParams = {
   codexPath?: string; // default: "codex"
@@ -12,6 +12,7 @@ export type RunCodexParams = {
   model?: string;
   prompt: string;
   timeoutMs?: number; // default: 10min
+  onEvent?: (event: unknown) => void;
 };
 
 export type RunCodexResult = {
@@ -27,11 +28,18 @@ export async function runCodex(params: RunCodexParams): Promise<RunCodexResult> 
   const args: string[] = [];
   if (params.threadId) {
     args.push('exec', 'resume', '--skip-git-repo-check', '--json');
+    if (params.sandbox === 'workspace-write') args.push('--full-auto');
+    if (params.sandbox === 'danger-full-access') args.push('--dangerously-bypass-approvals-and-sandbox');
     if (params.model && params.model.trim()) args.push('--model', params.model.trim());
     args.push(params.threadId, params.prompt);
   } else {
     args.push('exec');
-    args.push('--skip-git-repo-check', '--json', '--sandbox', params.sandbox, '-C', params.workspace);
+    args.push('--skip-git-repo-check', '--json', '-C', params.workspace);
+    if (params.sandbox === 'danger-full-access') {
+      args.push('--dangerously-bypass-approvals-and-sandbox');
+    } else {
+      args.push('--sandbox', params.sandbox);
+    }
     if (params.model && params.model.trim()) args.push('--model', params.model.trim());
     args.push(params.prompt);
   }
@@ -43,6 +51,7 @@ export async function runCodex(params: RunCodexParams): Promise<RunCodexResult> 
 
   const stdoutLines: string[] = [];
   const stderrChunks: string[] = [];
+  let stdoutBuffer = '';
 
   let killed = false;
   const timer = setTimeout(() => {
@@ -52,9 +61,21 @@ export async function runCodex(params: RunCodexParams): Promise<RunCodexResult> 
 
   child.stdout.setEncoding('utf-8');
   child.stdout.on('data', (chunk: string) => {
-    // jsonl events should already be line-delimited.
-    for (const line of chunk.split(/\r?\n/)) {
-      if (line.trim()) stdoutLines.push(line);
+    stdoutBuffer += chunk;
+    const parts = stdoutBuffer.split(/\r?\n/);
+    stdoutBuffer = parts.pop() ?? '';
+
+    for (const rawLine of parts) {
+      const line = rawLine.trim();
+      if (!line) continue;
+      stdoutLines.push(line);
+      const event = parseCodexJsonlLine(line);
+      if (!event) continue;
+      try {
+        params.onEvent?.(event);
+      } catch {
+        // ignore progress callback failures
+      }
     }
   });
 
@@ -65,6 +86,19 @@ export async function runCodex(params: RunCodexParams): Promise<RunCodexResult> 
     child.on('error', reject);
     child.on('close', (c: number | null) => resolve(c ?? 0));
   }).finally(() => clearTimeout(timer));
+
+  const tail = stdoutBuffer.trim();
+  if (tail) {
+    stdoutLines.push(tail);
+    const event = parseCodexJsonlLine(tail);
+    if (event) {
+      try {
+        params.onEvent?.(event);
+      } catch {
+        // ignore progress callback failures
+      }
+    }
+  }
 
   if (killed) {
     throw new Error(`codex timed out after ${timeoutMs}ms`);

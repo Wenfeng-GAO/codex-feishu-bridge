@@ -37,7 +37,7 @@ export const BridgeConfigSchema = z
       })
       .default({ db_path: defaultDbPath() }),
     codex: z.object({
-      sandbox_default: z.enum(['read-only', 'workspace-write']).default('read-only'),
+      sandbox_default: z.enum(['read-only', 'workspace-write', 'danger-full-access']).default('read-only'),
       model: z.string().default(''),
       max_concurrency: z.number().int().positive().default(4),
     }),

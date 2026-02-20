@@ -49,6 +49,7 @@ describe('handler/handle ack behavior', () => {
           return await new Promise<never>(() => {});
         },
         clearAck: async () => {},
+        sendProgress: async () => {},
         sendReply: async ({ chunks }) => {
           sent.push(...chunks);
         },
@@ -102,6 +103,7 @@ describe('handler/handle ack behavior', () => {
           return { messageId: p.messageId, reactionId: 'r_typing' };
         },
         clearAck: async () => {},
+        sendProgress: async () => {},
         sendReply: async () => {},
       },
       renderMode: 'raw',
@@ -151,6 +153,7 @@ describe('handler/handle ack behavior', () => {
         clearAck: async (p) => {
           clearCalls.push(p);
         },
+        sendProgress: async () => {},
         sendReply: async () => {},
       },
       renderMode: 'raw',
@@ -160,5 +163,67 @@ describe('handler/handle ack behavior', () => {
     // clearAck is scheduled asynchronously after sendReply.
     await new Promise((r) => setTimeout(r, 0));
     expect(clearCalls).toEqual([{ messageId: 'm_ack_clear', reactionId: 'r_clear' }]);
+  });
+
+  it('streams stage progress while codex is running', async () => {
+    const cfg = BridgeConfigSchema.parse({
+      feishu: { domain: 'feishu', connection_mode: 'websocket' },
+      policy: {
+        dm_policy: 'open',
+        group_policy: 'open',
+        require_mention: false,
+        allow_from_user_open_ids: [],
+        allow_from_group_chat_ids: [],
+      },
+      routing: { default_workspace: '/tmp', chat_to_workspace: {}, workspace_allowlist: ['/tmp'] },
+      storage: { db_path: ':memory:' },
+      codex: { sandbox_default: 'read-only', model: '', max_concurrency: 4 },
+    });
+    const store = openStore(cfg.storage.db_path);
+
+    const inbound: Inbound = {
+      chat_id: 'c_progress',
+      chat_type: 'p2p',
+      message_id: 'm_progress',
+      sender_open_id: 'ou_sender',
+      message_type: 'text',
+      raw_content: '{"text":"hello"}',
+      text: 'hello',
+      mentioned_bot: false,
+    };
+
+    const progressCalls: string[] = [];
+
+    await handleInbound({
+      cfg,
+      store,
+      inbound,
+      runCodex: async ({ onProgress }) => {
+        onProgress?.('Session established');
+        onProgress?.('Analyzing request');
+        onProgress?.('Analyzing request');
+        onProgress?.('Running tool: exec_command');
+        return { threadId: 't_progress', finalText: 'ok' };
+      },
+      send: {
+        ackReceived: async ({ messageId }) => ({ messageId, reactionId: 'r_progress' }),
+        clearAck: async () => {},
+        sendProgress: async ({ text }) => {
+          progressCalls.push(text);
+        },
+        sendReply: async () => {},
+      },
+      renderMode: 'raw',
+      textChunkLimit: 4000,
+    });
+
+    // sendProgress is fire-and-forget.
+    await new Promise((r) => setTimeout(r, 0));
+    expect(progressCalls).toEqual([
+      'Task accepted, starting execution',
+      'Session established',
+      'Analyzing request',
+      'Running tool: exec_command',
+    ]);
   });
 });

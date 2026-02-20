@@ -35,6 +35,7 @@ describe('integration: queue', () => {
     const send = {
       ackReceived: async ({ messageId }: { messageId: string }) => ({ messageId, reactionId: 'r1' }),
       clearAck: async () => {},
+      sendProgress: async () => {},
       sendReply: async () => {},
     };
 

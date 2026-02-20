@@ -7,7 +7,7 @@ export type ChatSessionRow = {
   chat_id: string;
   workspace: string;
   thread_id: string | null;
-  sandbox: 'read-only' | 'workspace-write';
+  sandbox: 'read-only' | 'workspace-write' | 'danger-full-access';
   updated_at: number;
 };
 
@@ -23,7 +23,7 @@ export type Store = {
     chatId: string;
     workspace: string;
     threadId: string | null;
-    sandbox: 'read-only' | 'workspace-write';
+    sandbox: 'read-only' | 'workspace-write' | 'danger-full-access';
     updatedAt: number;
   }): void;
 };

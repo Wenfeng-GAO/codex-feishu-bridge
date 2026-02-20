@@ -23,6 +23,17 @@ describe('BridgeConfigSchema', () => {
     expect(cfg.codex.sandbox_default).toBe('read-only');
     expect(cfg.storage.db_path).toMatch(/state\.sqlite3$/);
   });
+
+  it('accepts danger-full-access sandbox mode', () => {
+    const cfg = BridgeConfigSchema.parse({
+      feishu: {},
+      policy: {},
+      routing: { default_workspace: '/tmp' },
+      storage: {},
+      codex: { sandbox_default: 'danger-full-access' },
+    });
+    expect(cfg.codex.sandbox_default).toBe('danger-full-access');
+  });
 });
 
 describe('loadConfig', () => {
