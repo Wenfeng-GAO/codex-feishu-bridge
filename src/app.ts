@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 
+import { formatFeishuThreadTitle, normalizeSessionOriginatorForDesktop, upsertCodexThreadTitle } from './codex/app_index.js';
 import { loadConfig, type BridgeConfig } from './config.js';
 import { extractProgressText } from './codex/progress.js';
 import { runCodex } from './codex/runner.js';
@@ -8,7 +9,7 @@ import { parseInboundMessage } from './feishu/parse.js';
 import { startFeishuWsWithRetry } from './feishu/ws.js';
 import type { FeishuMessageEvent } from './feishu/types.js';
 import { InboundDispatcher } from './handler/dispatcher.js';
-import type { RunCodexAdapter, SendAdapter } from './handler/handle.js';
+import type { RunCodexAdapter, SendAdapter, SyncThreadTitleAdapter } from './handler/handle.js';
 import { openStore, type Store } from './store/db.js';
 
 export type AppCommonOpts = {
@@ -67,6 +68,25 @@ function createReplaySendAdapter(): { send: SendAdapter; sent: string[] } {
   };
 }
 
+function createThreadTitleSyncAdapter(): SyncThreadTitleAdapter {
+  return ({ threadId, inbound }) => {
+    const title = formatFeishuThreadTitle(inbound);
+    upsertCodexThreadTitle({ threadId, title });
+    normalizeSessionOriginatorForDesktop({ threadId });
+  };
+}
+
+function backfillDesktopSessionMetadata(store: Store): void {
+  for (const s of store.listChatSessions()) {
+    if (!s.thread_id) continue;
+    try {
+      normalizeSessionOriginatorForDesktop({ threadId: s.thread_id });
+    } catch {
+      // Ignore best-effort compatibility sync errors.
+    }
+  }
+}
+
 export async function runReplay(opts: AppCommonOpts & { fixturePath: string }): Promise<{ sent: string[] }> {
   const cfg = loadConfig({ configPath: opts.configPath });
   const store = openStore(':memory:');
@@ -98,7 +118,9 @@ export async function runService(opts: AppCommonOpts): Promise<void> {
     store,
     runCodex: runCodexAdapter,
     send,
+    syncThreadTitle: createThreadTitleSyncAdapter(),
   });
+  backfillDesktopSessionMetadata(store);
 
   const { wsClient } = await startFeishuWsWithRetry({
     cfg,

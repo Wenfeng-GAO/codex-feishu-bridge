@@ -19,6 +19,7 @@ export type Store = {
   markMessageProcessed(params: { messageId: string; chatId: string; createdAt: number }): void;
 
   getChatSession(chatId: string): ChatSessionRow | null;
+  listChatSessions(): ChatSessionRow[];
   upsertChatSession(params: {
     chatId: string;
     workspace: string;
@@ -72,6 +73,9 @@ export function openStore(dbPath: string): Store {
   const stmtGetChat = db.prepare(
     'SELECT chat_id, workspace, thread_id, sandbox, updated_at FROM chat_sessions WHERE chat_id = ? LIMIT 1;',
   );
+  const stmtListChats = db.prepare(
+    'SELECT chat_id, workspace, thread_id, sandbox, updated_at FROM chat_sessions ORDER BY updated_at DESC;',
+  );
   const stmtUpsertChat = db.prepare(
     [
       'INSERT INTO chat_sessions(chat_id, workspace, thread_id, sandbox, updated_at)',
@@ -95,6 +99,7 @@ export function openStore(dbPath: string): Store {
       const row = stmtGetChat.get(chatId) as ChatSessionRow | undefined;
       return row ?? null;
     },
+    listChatSessions: () => stmtListChats.all() as ChatSessionRow[],
     upsertChatSession: ({ chatId, workspace, threadId, sandbox, updatedAt }) => {
       stmtUpsertChat.run(chatId, workspace, threadId, sandbox, updatedAt);
     },

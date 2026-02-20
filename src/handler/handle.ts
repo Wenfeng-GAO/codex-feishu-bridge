@@ -28,6 +28,8 @@ export type RunCodexAdapter = (params: {
   onProgress?: (text: string) => void;
 }) => Promise<Pick<RunCodexResult, 'threadId' | 'finalText'>>;
 
+export type SyncThreadTitleAdapter = (params: { threadId: string; inbound: Inbound }) => Promise<void> | void;
+
 function resolveWorkspace(cfg: BridgeConfig, inbound: Inbound): string {
   return cfg.routing.chat_to_workspace[inbound.chat_id] ?? cfg.routing.default_workspace;
 }
@@ -49,6 +51,7 @@ export async function handleInbound(params: {
   inbound: Inbound;
   runCodex: RunCodexAdapter;
   send: SendAdapter;
+  syncThreadTitle?: SyncThreadTitleAdapter;
   renderMode?: 'raw' | 'card' | 'auto';
   textChunkLimit?: number;
 }): Promise<void> {
@@ -123,6 +126,11 @@ export async function handleInbound(params: {
       sandbox,
       updatedAt: Date.now(),
     });
+    if (params.syncThreadTitle) {
+      void Promise.resolve(params.syncThreadTitle({ threadId: result.threadId, inbound })).catch(() => {
+        // ignore app index sync errors
+      });
+    }
 
     const renderMode = params.renderMode ?? 'auto';
     const limit = params.textChunkLimit ?? 4000;
