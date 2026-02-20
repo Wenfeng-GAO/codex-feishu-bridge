@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import type { BridgeConfig } from '../config.js';
 import { createFeishuClient } from './client.js';
 
@@ -6,6 +7,13 @@ export type FeishuApi = {
   unreact(params: { messageId: string; reactionId: string }): Promise<void>;
   reply(params: { messageId: string; content: string; msgType: string }): Promise<void>;
   create(params: { chatId: string; content: string; msgType: string }): Promise<void>;
+  createWithReceiveId(params: {
+    receiveIdType: 'chat_id' | 'open_id';
+    receiveId: string;
+    content: string;
+    msgType: string;
+  }): Promise<void>;
+  uploadImage(params: { imagePath: string; imageType?: 'message' | 'avatar' }): Promise<{ imageKey: string }>;
 };
 
 export function buildPostMarkdown(text: string): { msgType: string; content: string } {
@@ -66,6 +74,24 @@ export async function sendProgress(params: SendProgressParams): Promise<void> {
   await params.api.create({ chatId: params.chatId, content: payload.content, msgType: payload.msgType });
 }
 
+export type SendImageParams = {
+  api: FeishuApi;
+  receiveIdType: 'chat_id' | 'open_id';
+  receiveId: string;
+  imagePath: string;
+};
+
+export async function sendImage(params: SendImageParams): Promise<void> {
+  const upload = await params.api.uploadImage({ imagePath: params.imagePath, imageType: 'message' });
+  const content = JSON.stringify({ image_key: upload.imageKey });
+  await params.api.createWithReceiveId({
+    receiveIdType: params.receiveIdType,
+    receiveId: params.receiveId,
+    content,
+    msgType: 'image',
+  });
+}
+
 export function createFeishuApi(cfg: BridgeConfig): FeishuApi {
   const client = createFeishuClient(cfg);
 
@@ -97,6 +123,26 @@ export function createFeishuApi(cfg: BridgeConfig): FeishuApi {
         data: { receive_id: chatId, content, msg_type: msgType },
       });
       if (res?.code !== 0) throw new Error(res?.msg || `create failed code=${res?.code}`);
+    },
+    createWithReceiveId: async ({ receiveIdType, receiveId, content, msgType }) => {
+      const res: any = await client.im.message.create({
+        params: { receive_id_type: receiveIdType },
+        data: { receive_id: receiveId, content, msg_type: msgType },
+      });
+      if (res?.code !== 0) throw new Error(res?.msg || `create failed code=${res?.code}`);
+    },
+    uploadImage: async ({ imagePath, imageType = 'message' }) => {
+      const res: any = await client.im.image.create({
+        data: { image_type: imageType, image: fs.createReadStream(imagePath) },
+      });
+      if (!res) throw new Error('image upload failed: empty response');
+      if (typeof res?.code === 'number' && res.code !== 0) {
+        const detail = res?.msg ? `msg=${res.msg}` : `res=${JSON.stringify(res)}`;
+        throw new Error(`image upload failed: ${detail}`);
+      }
+      const imageKey = res?.data?.image_key ?? res?.image_key;
+      if (!imageKey) throw new Error('image upload missing image_key');
+      return { imageKey };
     },
   };
 }

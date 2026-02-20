@@ -23,3 +23,11 @@ npm run test:unit
 npm run test:integration
 npm run smoke:replay
 ```
+
+## CLI
+
+```bash
+codex-feishu-bridge doctor --config <path>
+codex-feishu-bridge --replay <fixture.json> --config <path>
+codex-feishu-bridge send-image --image <path> --open-id <id> --config <path>
+```

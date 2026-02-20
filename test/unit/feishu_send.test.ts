@@ -19,6 +19,13 @@ describe('feishu/sendReply', () => {
       create: async () => {
         calls.push('create');
       },
+      createWithReceiveId: async () => {
+        calls.push('createWithReceiveId');
+      },
+      uploadImage: async () => {
+        calls.push('uploadImage');
+        return { imageKey: 'k1' };
+      },
     };
 
     await sendReply({
